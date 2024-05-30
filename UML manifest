@@ -1,0 +1,26 @@
+@startuml
+actor User as CC
+participant "Script" as LS
+participant "Vimeo API" as Vimeo
+
+CC -> LS: Prepare video file and API tokens
+LS -> Vimeo: POST /me/videos (Create video)
+Vimeo -> LS: Return video upload link and video ID
+
+loop Upload video chunks
+    LS -> Vimeo: PATCH {upload_link} (Upload chunk)
+    Vimeo -> LS: Return upload offset
+end
+
+LS -> Vimeo: HEAD {upload_link} (Verify upload)
+Vimeo -> LS: Return upload length and offset
+
+alt Upload complete
+    LS -> Vimeo: PUT /me/projects/{folder_id}/videos/{video_id} (Move video to folder)
+    Vimeo -> LS: 204 No Content (Move successful)
+else Upload incomplete
+    LS -> CC: Upload verification failed
+end
+
+LS -> CC: Notify upload and move status
+@enduml

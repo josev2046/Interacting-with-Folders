@@ -11,4 +11,5 @@ IMPORTANT: Remember that to add items to a folder, your app needs an access toke
 To learn more:
 
 Working with Folders: [Vimeo ](https://developer.vimeo.com/api/guides/folders)
+
 Access scopes: https://developer.vimeo.com/api/authentication#table-1

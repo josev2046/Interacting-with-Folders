@@ -1,0 +1,73 @@
+import os
+import requests
+
+# Vimeo API access token
+access_token = '{TOKEN}'  # Replace with your actual access token
+folder_id = '{FOLDER_ID}'  # Replace with the folder ID where you want to move the video
+video_filename = 'myvideo.mp4'  # Replace with your video file name
+
+# Step 1: Create the video
+filename_without_extension = os.path.splitext(video_filename)[0]
+
+# Specify the required headers for authentication and content negotiation
+headers = {
+    'Authorization': f'Bearer {access_token}',
+    'Content-Type': 'application/json',
+    'Accept': 'application/vnd.vimeo.*+json;version=3.4'
+}
+
+# Define parameters for the video upload request, including the approach and size
+params = {
+    'upload': {
+        'approach': 'tus',  
+        'size': os.path.getsize(video_filename)  
+    },
+    'name': filename_without_extension  
+}
+
+response = requests.post('https://api.vimeo.com/me/videos', headers=headers, json=params)
+video_data = response.json()
+upload_link = video_data.get('upload', {}).get('upload_link')
+
+# Set the chunk size to 256 MB for efficient data transmission
+chunk_size = 256 * 1024 * 1024  
+
+# Step 2: Upload the video file
+with open(video_filename, 'rb') as f:
+    headers = {
+        'Tus-Resumable': '1.0.0',
+        'Upload-Offset': '0',
+        'Content-Type': 'application/offset+octet-stream'
+    }
+    while True:
+        data = f.read(chunk_size)
+        if not data:
+            break
+        response = requests.patch(upload_link, headers=headers, data=data)
+        upload_offset = int(response.headers.get('Upload-Offset', 0))
+        if upload_offset == os.path.getsize(video_filename):
+            print("Upload complete!")
+            break
+
+# Step 3: Verify the upload
+response = requests.head(upload_link, headers={'Tus-Resumable': '1.0.0', 'Accept': 'application/vnd.vimeo.*+json;version=3.4'})
+upload_length = int(response.headers.get('Upload-Length', 0))
+upload_offset = int(response.headers.get('Upload-Offset', 0))
+if upload_length == upload_offset:
+    print("Upload verified: Video file received completely.")
+else:
+    print("Upload verification failed: Video file upload incomplete.")
+
+# Step 4: Move the video to the specified folder
+move_url = f'https://api.vimeo.com/me/projects/{folder_id}/videos/{video_data["uri"].split("/")[-1]}'
+move_headers = {
+    'Authorization': f'Bearer {access_token}',
+    'Content-Type': 'application/json'
+}
+move_response = requests.put(move_url, headers=move_headers)
+
+if move_response.status_code == 204:
+    print("Video successfully moved to the specified folder.")
+else:
+    print("Failed to move the video to the specified folder.")
+    print(f"Error response: {move_response.status_code} - {move_response.content.decode('utf-8')}")

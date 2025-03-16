@@ -15,3 +15,9 @@ To learn more:
 [Working with Folders ](https://developer.vimeo.com/api/guides/folders)
 
 [Access scopes ](https://developer.vimeo.com/api/authentication#table-1)
+
+
+
+[![DOI](https://zenodo.org/badge/808044577.svg)](https://doi.org/10.5281/zenodo.15033453)
+
+
